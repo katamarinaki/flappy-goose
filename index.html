@@ -43,6 +43,12 @@
       let gameLoopId;
       let gameStarted = false;
 
+      // Detect if the device is mobile
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
       function drawGoose() {
         if (goose.complete) {
           ctx.drawImage(
@@ -79,7 +85,7 @@
       }
 
       function updateGame() {
-        if (gameOver) return;
+        if (!gameStarted || gameOver) return;
 
         gooseVelocity += gravity;
         gooseY += gooseVelocity;
@@ -139,21 +145,23 @@
         if (!gameStarted) {
           ctx.fillStyle = "black";
           ctx.font = "24px Arial";
-          ctx.fillText(
-            "Press Space to Start",
-            canvas.width / 2 - 100,
-            canvas.height / 2
-          );
+          const startText = isMobile
+            ? "Touch to Start"
+            : "Press Space to Start";
+          ctx.fillText(startText, canvas.width / 2 - 100, canvas.height / 2);
         }
 
         if (gameOver) {
           ctx.fillStyle = "black";
           ctx.font = "48px Arial";
-          ctx.fillText("HONKED! ", canvas.width / 2 - 120, canvas.height / 2);
+          ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
           ctx.font = "24px Arial";
+          const restartText = isMobile
+            ? "Touch to Restart"
+            : "Press Space to Restart";
           ctx.fillText(
-            "Press Space to Restart",
-            canvas.width / 2 - 130,
+            restartText,
+            canvas.width / 2 - 100,
             canvas.height / 2 + 50
           );
         }
@@ -165,18 +173,28 @@
         gameLoopId = requestAnimationFrame(gameLoop);
       }
 
+      function jump() {
+        if (!gameStarted) {
+          gameStarted = true;
+        } else if (gameOver) {
+          resetGame();
+        } else {
+          gooseVelocity = jumpStrength;
+        }
+      }
+
+      // Keyboard controls
       document.addEventListener("keydown", (event) => {
         if (event.code === "Space") {
-          if (!gameStarted) {
-            gameStarted = true;
-            gameLoop();
-          } else if (gameOver) {
-            resetGame();
-          } else {
-            gooseVelocity = jumpStrength;
-          }
+          jump();
           event.preventDefault();
         }
+      });
+
+      // Touch controls
+      canvas.addEventListener("touchstart", (event) => {
+        jump();
+        event.preventDefault();
       });
 
       function resetGame() {
@@ -185,12 +203,11 @@
         candles.length = 0;
         score = 0;
         gameOver = false;
-        cancelAnimationFrame(gameLoopId);
-        gameLoop();
+        gameStarted = false;
       }
 
-      // Initial draw
-      drawGame();
+      // Start the game loop
+      gameLoop();
     </script>
   </body>
 </html>
